@@ -1,15 +1,13 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getAdminProducts } from "@/actions/admin";
-import { getCategories } from "@/actions/products";
 import { formatPrice } from "@/lib/utils";
 import AdminProductActions from "./product-actions";
 
+type AdminProduct = Awaited<ReturnType<typeof getAdminProducts>>[number];
+
 export default async function AdminProductsPage() {
-  const [products, categories] = await Promise.all([
-    getAdminProducts(),
-    getCategories(),
-  ]);
+  const products = await getAdminProducts();
 
   return (
     <div>
@@ -39,7 +37,7 @@ export default async function AdminProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {products.map((product: AdminProduct) => (
                 <tr
                   key={product.id}
                   className="border-b border-border/50 last:border-0 hover:bg-muted/30"
