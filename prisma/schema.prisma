@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// Categories - 계층형 카테고리
+// ============================================================
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  imageUrl  String?    @map("image_url")
+  sortOrder Int        @default(0) @map("sort_order")
+  isActive  Boolean    @default(true) @map("is_active")
+  parentId  String?    @map("parent_id")
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  products  Product[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("categories")
+}
+
+// ============================================================
+// Products - 상품
+// ============================================================
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  description   String?     @db.Text
+  price         Int
+  salePrice     Int?        @map("sale_price")
+  categoryId    String      @map("category_id")
+  category      Category    @relation(fields: [categoryId], references: [id])
+  images        String[]
+  thumbnailUrl  String?     @map("thumbnail_url")
+  stock         Int         @default(0)
+  weight        String?
+  origin        String?
+  unit          String?
+  isNew         Boolean     @default(false) @map("is_new")
+  isRecommended Boolean     @default(false) @map("is_recommended")
+  isSoldOut     Boolean     @default(false) @map("is_sold_out")
+  isActive      Boolean     @default(true) @map("is_active")
+  shippingInfo  String?     @map("shipping_info")
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  qnas          Qna[]
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@index([categoryId])
+  @@index([isActive, isNew])
+  @@index([isActive, isRecommended])
+  @@map("products")
+}
+
+// ============================================================
+// Profiles - 회원 프로필 (Supabase Auth 연동)
+// ============================================================
+model Profile {
+  id            String     @id // = Supabase auth.users.id
+  email         String     @unique
+  name          String?
+  phone         String?
+  zipCode       String?    @map("zip_code")
+  address       String?
+  addressDetail String?    @map("address_detail")
+  points        Int        @default(0)
+  isAdmin       Boolean    @default(false) @map("is_admin")
+  orders        Order[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  qnas          Qna[]
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}
+
+// ============================================================
+// Orders - 주문
+// ============================================================
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    String      @unique @map("order_number")
+  userId         String      @map("user_id")
+  user           Profile     @relation(fields: [userId], references: [id])
+  status         OrderStatus @default(PENDING)
+  totalAmount    Int         @map("total_amount")
+  shippingFee    Int         @default(0) @map("shipping_fee")
+  recipientName  String      @map("recipient_name")
+  recipientPhone String      @map("recipient_phone")
+  zipCode        String      @map("zip_code")
+  address        String
+  addressDetail  String?     @map("address_detail")
+  deliveryMemo   String?     @map("delivery_memo")
+  paymentMethod  String?     @map("payment_method")
+  paymentKey     String?     @map("payment_key")
+  paidAt         DateTime?   @map("paid_at")
+  items          OrderItem[]
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PREPARING
+  SHIPPING
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String  @map("order_id")
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Int
+  name      String
+
+  @@map("order_items")
+}
+
+// ============================================================
+// Cart - 장바구니 (로그인 유저)
+// ============================================================
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+// ============================================================
+// Reviews - 상품후기
+// ============================================================
+model Review {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int
+  content   String   @db.Text
+  images    String[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([productId])
+  @@map("reviews")
+}
+
+// ============================================================
+// QnA - 질문/답변
+// ============================================================
+model Qna {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  question  String   @db.Text
+  answer    String?  @db.Text
+  isPrivate Boolean  @default(false) @map("is_private")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([productId])
+  @@map("qna")
+}
