@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F5E9"/>
+      <stop offset="100%" style="stop-color:#C8E6C9"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <text x="300" y="240" text-anchor="middle" font-size="120">🍙</text>
+  <text x="300" y="340" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="bold" fill="#2E7D32">완도 재래김</text>
+  <text x="300" y="380" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#66BB6A">100장 | 국내산 완도</text>
+  <rect x="240" y="420" width="120" height="36" rx="18" fill="#2E7D32" opacity="0.9"/>
+  <text x="300" y="444" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="white">NEW</text>
+</svg>
