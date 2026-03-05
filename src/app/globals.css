@@ -6,7 +6,7 @@
 :root {
   --background: #ffffff;
   --foreground: #212121;
-  --primary: #ce0e2d;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
   --secondary: #f5f5f5;
   --secondary-foreground: #212121;
@@ -18,7 +18,7 @@
   --destructive-foreground: #ffffff;
   --border: #e5e5e5;
   --input: #e5e5e5;
-  --ring: #ce0e2d;
+  --ring: #2563eb;
   --radius: 0.5rem;
   --card: #ffffff;
   --card-foreground: #212121;

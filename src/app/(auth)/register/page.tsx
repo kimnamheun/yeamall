@@ -48,7 +48,7 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground">회원가입</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            예아몰 회원이 되어 특별한 혜택을 누리세요
+            YeAMall 회원이 되어 특별한 혜택을 누리세요
           </p>
         </div>
 

@@ -7,9 +7,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* 회사 정보 */}
           <div>
-            <h3 className="text-lg font-bold text-primary mb-4">예아몰</h3>
+            <h3 className="text-lg font-bold text-primary mb-4">YeAMall</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>상호: 예아몰 | 대표: 홍길동</p>
+              <p>상호: YeAMall | 대표: 홍길동</p>
               <p>사업자등록번호: 123-45-67890</p>
               <p>통신판매업신고: 제2024-서울강남-0001호</p>
               <p>주소: 서울특별시 강남구 테헤란로 123</p>
@@ -57,7 +57,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t border-border text-center text-xs text-muted-foreground">
-          <p>&copy; 2026 예아몰. All rights reserved.</p>
+          <p>&copy; 2026 YeAMall. All rights reserved.</p>
         </div>
       </div>
     </footer>
