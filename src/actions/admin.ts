@@ -84,10 +84,8 @@ export async function deleteProduct(id: string) {
 
 // ============ 주문 관리 ============
 
-export async function getAdminOrders(status?: string) {
-  const where = status ? { status: status as never } : {};
+export async function getAdminOrders() {
   return prisma.order.findMany({
-    where,
     include: {
       user: true,
       items: { include: { product: true } },
