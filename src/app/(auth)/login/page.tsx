@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { signIn } from "@/actions/auth";
+import { signIn, signInWithOAuth } from "@/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -99,21 +99,32 @@ export default function LoginPage() {
               <span className="bg-white px-3 text-muted-foreground">간편 로그인</span>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <button className="flex h-12 items-center justify-center rounded-xl border border-border hover:bg-muted transition-colors">
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                const result = await signInWithOAuth("kakao");
+                if (result.url) window.location.href = result.url;
+              }}
+              className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border hover:bg-muted transition-colors"
+            >
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FEE500]">
                 <span className="text-xs font-bold text-[#391B1B]">K</span>
               </div>
+              <span className="text-sm">카카오</span>
             </button>
-            <button className="flex h-12 items-center justify-center rounded-xl border border-border hover:bg-muted transition-colors">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#03C75A]">
-                <span className="text-xs font-bold text-white">N</span>
-              </div>
-            </button>
-            <button className="flex h-12 items-center justify-center rounded-xl border border-border hover:bg-muted transition-colors">
+            <button
+              type="button"
+              onClick={async () => {
+                const result = await signInWithOAuth("google");
+                if (result.url) window.location.href = result.url;
+              }}
+              className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border hover:bg-muted transition-colors"
+            >
               <div className="flex items-center justify-center w-6 h-6">
                 <span className="text-lg">G</span>
               </div>
+              <span className="text-sm">Google</span>
             </button>
           </div>
         </div>

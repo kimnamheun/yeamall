@@ -59,6 +59,22 @@ export async function signIn(formData: FormData) {
   return { success: true };
 }
 
+export async function signInWithOAuth(provider: "kakao" | "google") {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { url: data.url };
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

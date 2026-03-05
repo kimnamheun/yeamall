@@ -3,13 +3,27 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useCartStore } from "@/stores/use-cart-store";
 import { formatPrice } from "@/lib/utils";
-import { SHIPPING } from "@/lib/constants";
+import { createOrder, confirmPayment } from "@/actions/order";
+
+declare global {
+  interface Window {
+    PortOne?: {
+      requestPayment: (options: Record<string, unknown>) => Promise<{
+        code?: string;
+        paymentId?: string;
+        message?: string;
+      }>;
+    };
+  }
+}
 
 export default function CheckoutPage() {
-  const { items, getTotalPrice, getShippingFee } = useCartStore();
+  const router = useRouter();
+  const { items, getTotalPrice, getShippingFee, clearCart } = useCartStore();
   const [form, setForm] = useState({
     recipientName: "",
     recipientPhone: "",
@@ -19,6 +33,7 @@ export default function CheckoutPage() {
     deliveryMemo: "",
     paymentMethod: "card",
   });
+  const [loading, setLoading] = useState(false);
 
   const totalPrice = getTotalPrice();
   const shippingFee = getShippingFee();
@@ -33,26 +48,91 @@ export default function CheckoutPage() {
       alert("배송 정보를 모두 입력해주세요.");
       return;
     }
-    // TODO: 포트원 결제 연동
-    alert("포트원(PortOne) 연동 후 결제가 가능합니다.");
+
+    setLoading(true);
+
+    // 1. 주문 생성
+    const orderResult = await createOrder({
+      items: items.map((item) => ({
+        productId: item.productId,
+        name: item.name,
+        price: item.salePrice ?? item.price,
+        quantity: item.quantity,
+      })),
+      totalAmount: grandTotal,
+      shippingFee,
+      recipientName: form.recipientName,
+      recipientPhone: form.recipientPhone,
+      zipCode: form.zipCode,
+      address: form.address,
+      addressDetail: form.addressDetail,
+      deliveryMemo: form.deliveryMemo,
+      paymentMethod: form.paymentMethod,
+    });
+
+    if (orderResult.error) {
+      alert(orderResult.error);
+      setLoading(false);
+      return;
+    }
+
+    // 2. 포트원 결제
+    const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
+    if (!storeId || !window.PortOne) {
+      // 포트원 미설정 시 바로 결제 완료 처리 (테스트)
+      await confirmPayment(orderResult.orderId!, `test-${Date.now()}`);
+      clearCart();
+      alert("주문이 완료되었습니다!");
+      router.push("/orders");
+      return;
+    }
+
+    try {
+      const paymentId = `payment-${orderResult.orderId}`;
+      const response = await window.PortOne.requestPayment({
+        storeId,
+        paymentId,
+        orderName: items.length === 1
+          ? items[0].name
+          : `${items[0].name} 외 ${items.length - 1}건`,
+        totalAmount: grandTotal,
+        currency: "CURRENCY_KRW",
+        channelKey: "channel-key-placeholder",
+        payMethod: form.paymentMethod === "card" ? "CARD" : "TRANSFER",
+        customer: {
+          fullName: form.recipientName,
+          phoneNumber: form.recipientPhone,
+        },
+      });
+
+      if (response.code) {
+        alert(`결제 실패: ${response.message}`);
+        setLoading(false);
+        return;
+      }
+
+      // 3. 결제 확인
+      await confirmPayment(orderResult.orderId!, response.paymentId || paymentId);
+      clearCart();
+      alert("결제가 완료되었습니다!");
+      router.push("/orders");
+    } catch {
+      alert("결제 중 오류가 발생했습니다.");
+      setLoading(false);
+    }
   };
 
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center">
-        <p className="text-lg text-muted-foreground mb-4">
-          주문할 상품이 없습니다.
-        </p>
-        <Link href="/products" className="text-primary hover:underline">
-          쇼핑하러 가기
-        </Link>
+        <p className="text-lg text-muted-foreground mb-4">주문할 상품이 없습니다.</p>
+        <Link href="/products" className="text-primary hover:underline">쇼핑하러 가기</Link>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
-      {/* 헤더 */}
       <div className="flex items-center gap-3 mb-8">
         <Link href="/cart" className="text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
@@ -61,7 +141,6 @@ export default function CheckoutPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 왼쪽: 폼 */}
         <div className="lg:col-span-2 space-y-6">
           {/* 배송 정보 */}
           <div className="rounded-xl bg-white border border-border p-6">
@@ -92,16 +171,8 @@ export default function CheckoutPage() {
               <div>
                 <label className="block text-sm text-muted-foreground mb-1">주소</label>
                 <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={form.zipCode}
-                    readOnly
-                    placeholder="우편번호"
-                    className="w-32 h-11 px-3 rounded-lg border border-border bg-muted/50 text-sm"
-                  />
-                  <button className="h-11 px-4 rounded-lg border border-border text-sm hover:bg-muted transition-colors">
-                    주소 검색
-                  </button>
+                  <input type="text" value={form.zipCode} readOnly placeholder="우편번호" className="w-32 h-11 px-3 rounded-lg border border-border bg-muted/50 text-sm" />
+                  <button className="h-11 px-4 rounded-lg border border-border text-sm hover:bg-muted transition-colors">주소 검색</button>
                 </div>
                 <input
                   type="text"
@@ -137,28 +208,18 @@ export default function CheckoutPage() {
 
           {/* 주문 상품 */}
           <div className="rounded-xl bg-white border border-border p-6">
-            <h2 className="font-semibold text-foreground mb-4">
-              주문 상품 ({items.length})
-            </h2>
+            <h2 className="font-semibold text-foreground mb-4">주문 상품 ({items.length})</h2>
             <div className="space-y-3">
               {items.map((item) => (
                 <div key={item.productId} className="flex items-center gap-3 py-2">
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    <Image
-                      src={item.thumbnailUrl || "/images/placeholder.svg"}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
+                    <Image src={item.thumbnailUrl || "/images/placeholder.svg"} alt={item.name} fill className="object-cover" sizes="64px" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium line-clamp-1">{item.name}</p>
                     <p className="text-xs text-muted-foreground">수량: {item.quantity}</p>
                   </div>
-                  <p className="text-sm font-semibold">
-                    {formatPrice((item.salePrice ?? item.price) * item.quantity)}
-                  </p>
+                  <p className="text-sm font-semibold">{formatPrice((item.salePrice ?? item.price) * item.quantity)}</p>
                 </div>
               ))}
             </div>
@@ -190,7 +251,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* 오른쪽: 결제 요약 */}
+        {/* 결제 요약 */}
         <div className="lg:col-span-1">
           <div className="sticky top-24 rounded-xl bg-white border border-border p-6">
             <h3 className="font-semibold text-foreground mb-4">결제 금액</h3>
@@ -205,25 +266,18 @@ export default function CheckoutPage() {
                   {shippingFee === 0 ? "무료" : formatPrice(shippingFee)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">할인</span>
-                <span>0원</span>
-              </div>
               <div className="border-t border-border pt-3 flex justify-between">
                 <span className="font-semibold">총 결제금액</span>
-                <span className="text-xl font-bold text-primary">
-                  {formatPrice(grandTotal)}
-                </span>
+                <span className="text-xl font-bold text-primary">{formatPrice(grandTotal)}</span>
               </div>
             </div>
-
             <button
               onClick={handleOrder}
-              className="w-full mt-6 h-14 rounded-xl bg-primary text-white font-semibold text-lg hover:bg-primary/90 transition-colors"
+              disabled={loading}
+              className="w-full mt-6 h-14 rounded-xl bg-primary text-white font-semibold text-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {formatPrice(grandTotal)} 결제하기
+              {loading ? "처리 중..." : `${formatPrice(grandTotal)} 결제하기`}
             </button>
-
             <p className="mt-3 text-xs text-center text-muted-foreground">
               주문 내용을 확인하였으며 결제에 동의합니다.
             </p>

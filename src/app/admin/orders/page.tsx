@@ -1,12 +1,7 @@
+import { getAdminOrders } from "@/actions/admin";
 import { formatPrice } from "@/lib/utils";
-
-const orders = [
-  { id: "YEA-20260305-0015", customer: "김철수", phone: "010-1234-****", amount: 89000, status: "PAID", items: 2, date: "2026-03-05 14:30" },
-  { id: "YEA-20260305-0014", customer: "이영희", phone: "010-5678-****", amount: 45000, status: "PREPARING", items: 1, date: "2026-03-05 13:15" },
-  { id: "YEA-20260305-0013", customer: "박민수", phone: "010-9012-****", amount: 127000, status: "SHIPPING", items: 3, date: "2026-03-05 10:22" },
-  { id: "YEA-20260304-0012", customer: "최지은", phone: "010-3456-****", amount: 32000, status: "PENDING", items: 1, date: "2026-03-04 18:45" },
-  { id: "YEA-20260304-0011", customer: "정하늘", phone: "010-7890-****", amount: 68000, status: "DELIVERED", items: 2, date: "2026-03-04 09:10" },
-];
+import dayjs from "dayjs";
+import OrderStatusSelect from "./order-status-select";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   PENDING: { label: "결제대기", color: "bg-yellow-100 text-yellow-800" },
@@ -15,26 +10,17 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   SHIPPING: { label: "배송중", color: "bg-purple-100 text-purple-800" },
   DELIVERED: { label: "배송완료", color: "bg-green-100 text-green-800" },
   CANCELLED: { label: "취소", color: "bg-gray-100 text-gray-800" },
+  RETURN_REQUESTED: { label: "반품요청", color: "bg-orange-100 text-orange-800" },
+  RETURNED: { label: "반품완료", color: "bg-gray-100 text-gray-800" },
 };
 
-export default function AdminOrdersPage() {
+export default async function AdminOrdersPage() {
+  const orders = await getAdminOrders();
+
   return (
     <div>
       <h2 className="text-xl font-bold text-foreground mb-6">주문 관리</h2>
 
-      {/* 필터 탭 */}
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto">
-        {["전체", "결제대기", "결제완료", "상품준비", "배송중", "배송완료"].map((tab) => (
-          <button
-            key={tab}
-            className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-white border border-border hover:border-primary hover:text-primary transition-colors"
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* 주문 테이블 */}
       <div className="rounded-xl bg-white border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -46,45 +32,49 @@ export default function AdminOrdersPage() {
                 <th className="text-right px-4 py-3 font-medium text-muted-foreground">금액</th>
                 <th className="text-center px-4 py-3 font-medium text-muted-foreground">상태</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">주문일시</th>
-                <th className="text-center px-4 py-3 font-medium text-muted-foreground">관리</th>
+                <th className="text-center px-4 py-3 font-medium text-muted-foreground">상태변경</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((order) => {
-                const status = statusLabels[order.status];
+                const status = statusLabels[order.status] || { label: order.status, color: "" };
                 return (
                   <tr
                     key={order.id}
                     className="border-b border-border/50 last:border-0 hover:bg-muted/30"
                   >
-                    <td className="px-4 py-3 font-medium">{order.id}</td>
+                    <td className="px-4 py-3 font-medium">{order.orderNumber}</td>
                     <td className="px-4 py-3">
                       <div>
-                        <p>{order.customer}</p>
-                        <p className="text-xs text-muted-foreground">{order.phone}</p>
+                        <p>{order.recipientName}</p>
+                        <p className="text-xs text-muted-foreground">{order.recipientPhone}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center">{order.items}건</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatPrice(order.amount)}</td>
+                    <td className="px-4 py-3 text-center">{order.items.length}건</td>
+                    <td className="px-4 py-3 text-right font-medium">
+                      {formatPrice(order.totalAmount)}
+                    </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${status?.color}`}>
-                        {status?.label}
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
+                        {status.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{order.date}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {dayjs(order.createdAt).format("YYYY-MM-DD HH:mm")}
+                    </td>
                     <td className="px-4 py-3 text-center">
-                      <select className="h-8 px-2 text-xs rounded border border-border focus:border-primary outline-none">
-                        <option>상태변경</option>
-                        <option>결제완료</option>
-                        <option>상품준비</option>
-                        <option>배송중</option>
-                        <option>배송완료</option>
-                        <option>취소</option>
-                      </select>
+                      <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
                     </td>
                   </tr>
                 );
               })}
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                    주문이 없습니다.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
