@@ -3,6 +3,8 @@ import { formatPrice } from "@/lib/utils";
 import dayjs from "dayjs";
 import OrderStatusSelect from "./order-status-select";
 
+type AdminOrder = Awaited<ReturnType<typeof getAdminOrders>>[number];
+
 const statusLabels: Record<string, { label: string; color: string }> = {
   PENDING: { label: "결제대기", color: "bg-yellow-100 text-yellow-800" },
   PAID: { label: "결제완료", color: "bg-blue-100 text-blue-800" },
@@ -36,7 +38,7 @@ export default async function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => {
+              {orders.map((order: AdminOrder) => {
                 const status = statusLabels[order.status] || { label: order.status, color: "" };
                 return (
                   <tr
