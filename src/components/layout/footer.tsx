@@ -1,19 +1,22 @@
 import Link from "next/link";
+import { SITE } from "@/lib/constants";
 
 export default function Footer() {
+  const { company, cs } = SITE;
+
   return (
     <footer className="border-t border-border bg-muted">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* 회사 정보 */}
           <div>
-            <h3 className="text-lg text-primary mb-4 logo-text">YeAmall</h3>
+            <h3 className="text-lg text-primary mb-4 logo-text">{SITE.name}</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>상호: YeAmall | 대표: 홍길동</p>
-              <p>사업자등록번호: 123-45-67890</p>
-              <p>통신판매업신고: 제2024-서울강남-0001호</p>
-              <p>주소: 서울특별시 강남구 테헤란로 123</p>
-              <p>전화: 02-1234-5678 | 이메일: info@yeamall.co.kr</p>
+              <p>상호: {company.name} | 대표: {company.ceo}</p>
+              <p>사업자등록번호: {company.bizNo}</p>
+              <p>통신판매업신고: {company.salesNo}</p>
+              <p>주소: {company.address}</p>
+              <p>전화: {company.phone} | 이메일: {company.email}</p>
             </div>
           </div>
 
@@ -47,17 +50,17 @@ export default function Footer() {
           {/* 운영시간 */}
           <div>
             <h4 className="font-semibold mb-4">고객센터</h4>
-            <p className="text-2xl font-bold text-primary mb-2">02-1234-5678</p>
+            <p className="text-2xl font-bold text-primary mb-2">{cs.phone}</p>
             <div className="space-y-1 text-sm text-muted-foreground">
-              <p>평일 09:00 ~ 18:00</p>
-              <p>점심시간 12:00 ~ 13:00</p>
-              <p>토/일/공휴일 휴무</p>
+              <p>{cs.hours}</p>
+              <p>{cs.lunch}</p>
+              <p>{cs.holiday}</p>
             </div>
           </div>
         </div>
 
         <div className="mt-8 pt-8 border-t border-border text-center text-xs text-muted-foreground">
-          <p>&copy; 2026 YeAmall. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {SITE.name}. All rights reserved.</p>
         </div>
       </div>
     </footer>

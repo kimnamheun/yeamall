@@ -3,6 +3,56 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+// ============ 대시보드 통계 ============
+
+export async function getDashboardStats() {
+  const [totalProducts, activeProducts, totalOrders, orders] =
+    await Promise.all([
+      prisma.product.count(),
+      prisma.product.count({ where: { isActive: true, isSoldOut: false } }),
+      prisma.order.count(),
+      prisma.order.findMany({
+        select: { totalAmount: true, status: true, createdAt: true },
+      }),
+    ]);
+
+  const totalRevenue = orders
+    .filter((o) => o.status !== "CANCELLED" && o.status !== "RETURNED")
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayOrders = orders.filter((o) => new Date(o.createdAt) >= today);
+  const todayRevenue = todayOrders
+    .filter((o) => o.status !== "CANCELLED" && o.status !== "RETURNED")
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+  const pendingOrders = orders.filter((o) => o.status === "PENDING" || o.status === "PAID").length;
+  const shippingOrders = orders.filter((o) => o.status === "SHIPPING").length;
+
+  return {
+    totalProducts,
+    activeProducts,
+    totalOrders,
+    todayOrderCount: todayOrders.length,
+    totalRevenue,
+    todayRevenue,
+    pendingOrders,
+    shippingOrders,
+  };
+}
+
+export async function getRecentOrders(take = 10) {
+  return prisma.order.findMany({
+    include: {
+      user: true,
+      items: { include: { product: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take,
+  });
+}
+
 // ============ 상품 관리 ============
 
 export async function getAdminProducts() {
@@ -79,6 +129,16 @@ export async function deleteProduct(id: string) {
   revalidatePath("/admin/products");
   revalidatePath("/products");
   revalidatePath("/");
+  return { success: true };
+}
+
+export async function toggleProductSoldOut(id: string, isSoldOut: boolean) {
+  await prisma.product.update({
+    where: { id },
+    data: { isSoldOut },
+  });
+  revalidatePath("/admin/products");
+  revalidatePath("/products");
   return { success: true };
 }
 

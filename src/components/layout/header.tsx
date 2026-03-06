@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, ShoppingCart, User, Menu, X, LogOut, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/stores/use-cart-store";
-import { CATEGORIES } from "@/lib/constants";
+import { SITE, CATEGORIES } from "@/lib/constants";
 import { signOut } from "@/actions/auth";
 
 interface HeaderProps {
@@ -60,7 +60,7 @@ export default function Header({ user }: HeaderProps) {
             </button>
 
             <Link href="/" className="flex-shrink-0">
-              <h1 className="text-2xl text-primary logo-text">YeAmall</h1>
+              <h1 className="text-2xl text-primary logo-text">{SITE.name}</h1>
             </Link>
 
             <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xl mx-8">

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
+import { SITE } from "@/lib/constants";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "YeAmall - 건어물 전문 쇼핑몰",
-    template: "%s | YeAmall",
+    default: SITE.title,
+    template: `%s | ${SITE.name}`,
   },
-  description:
-    "신선한 건어물, 멸치, 오징어, 해산물을 합리적인 가격에 만나보세요. 7만원 이상 무료배송!",
-  keywords: ["건어물", "멸치", "오징어", "해산물", "건어물 쇼핑몰", "YeAmall"],
+  description: SITE.description,
+  keywords: [...SITE.keywords],
 };
 
 export default function RootLayout({

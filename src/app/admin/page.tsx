@@ -1,135 +1,188 @@
+import Link from "next/link";
 import {
   Package,
   ShoppingCart,
-  Users,
   TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
+  DollarSign,
+  Clock,
+  Truck,
+  Eye,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { getDashboardStats, getRecentOrders } from "@/actions/admin";
+import { ORDER_STATUS } from "@/lib/constants";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/ko";
 
-const stats = [
-  {
-    label: "오늘 매출",
-    value: formatPrice(1250000),
-    change: "+12.5%",
-    up: true,
-    icon: TrendingUp,
-  },
-  {
-    label: "총 주문",
-    value: "156건",
-    change: "+8.2%",
-    up: true,
-    icon: ShoppingCart,
-  },
-  {
-    label: "등록 상품",
-    value: "48개",
-    change: "+3",
-    up: true,
-    icon: Package,
-  },
-  {
-    label: "가입 회원",
-    value: "2,340명",
-    change: "+24",
-    up: true,
-    icon: Users,
-  },
-];
+dayjs.extend(relativeTime);
+dayjs.locale("ko");
 
-const recentOrders = [
-  { id: "YEA-20260305-0015", customer: "김**", amount: 89000, status: "결제완료", time: "10분 전" },
-  { id: "YEA-20260305-0014", customer: "이**", amount: 45000, status: "상품준비", time: "25분 전" },
-  { id: "YEA-20260305-0013", customer: "박**", amount: 127000, status: "배송중", time: "1시간 전" },
-  { id: "YEA-20260305-0012", customer: "최**", amount: 32000, status: "결제대기", time: "2시간 전" },
-  { id: "YEA-20260305-0011", customer: "정**", amount: 68000, status: "배송완료", time: "3시간 전" },
-];
+type RecentOrder = Awaited<ReturnType<typeof getRecentOrders>>[number];
 
-const statusColors: Record<string, string> = {
-  결제대기: "bg-yellow-100 text-yellow-800",
-  결제완료: "bg-blue-100 text-blue-800",
-  상품준비: "bg-indigo-100 text-indigo-800",
-  배송중: "bg-purple-100 text-purple-800",
-  배송완료: "bg-green-100 text-green-800",
-};
+export default async function AdminDashboard() {
+  const [stats, recentOrders] = await Promise.all([
+    getDashboardStats(),
+    getRecentOrders(8),
+  ]);
 
-export default function AdminDashboard() {
+  const statCards = [
+    {
+      label: "오늘 매출",
+      value: formatPrice(stats.todayRevenue),
+      sub: `오늘 ${stats.todayOrderCount}건`,
+      icon: DollarSign,
+      color: "bg-blue-500",
+    },
+    {
+      label: "총 매출",
+      value: formatPrice(stats.totalRevenue),
+      sub: `총 ${stats.totalOrders}건`,
+      icon: TrendingUp,
+      color: "bg-green-500",
+    },
+    {
+      label: "등록 상품",
+      value: `${stats.totalProducts}개`,
+      sub: `판매중 ${stats.activeProducts}개`,
+      icon: Package,
+      color: "bg-purple-500",
+    },
+    {
+      label: "처리대기",
+      value: `${stats.pendingOrders}건`,
+      sub: `배송중 ${stats.shippingOrders}건`,
+      icon: Clock,
+      color: "bg-amber-500",
+    },
+  ];
+
+  const quickStats = [
+    { label: "처리대기", value: stats.pendingOrders, icon: Clock, color: "text-yellow-600", bg: "bg-yellow-50" },
+    { label: "배송중", value: stats.shippingOrders, icon: Truck, color: "text-purple-600", bg: "bg-purple-50" },
+  ];
+
   return (
     <div>
       <h2 className="text-xl font-bold text-foreground mb-6">대시보드</h2>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {statCards.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-xl bg-white border border-border p-5"
+            className="rounded-xl bg-white border border-border p-4 sm:p-5"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-muted-foreground">{stat.label}</span>
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <stat.icon size={18} className="text-primary" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{stat.label}</span>
+              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${stat.color} flex items-center justify-center`}>
+                <stat.icon size={16} className="text-white" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-            <div className="flex items-center gap-1 mt-1">
-              {stat.up ? (
-                <ArrowUpRight size={14} className="text-green-600" />
-              ) : (
-                <ArrowDownRight size={14} className="text-red-600" />
-              )}
-              <span
-                className={`text-xs font-medium ${
-                  stat.up ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {stat.change}
-              </span>
-              <span className="text-xs text-muted-foreground">전일 대비</span>
-            </div>
+            <p className="text-lg sm:text-2xl font-bold text-foreground">{stat.value}</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">{stat.sub}</p>
           </div>
         ))}
       </div>
 
-      {/* 최근 주문 */}
-      <div className="rounded-xl bg-white border border-border p-6">
-        <h3 className="font-semibold text-foreground mb-4">최근 주문</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                <th className="pb-3 font-medium text-muted-foreground">주문번호</th>
-                <th className="pb-3 font-medium text-muted-foreground">고객</th>
-                <th className="pb-3 font-medium text-muted-foreground">금액</th>
-                <th className="pb-3 font-medium text-muted-foreground">상태</th>
-                <th className="pb-3 font-medium text-muted-foreground">시간</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-border/50 last:border-0"
-                >
-                  <td className="py-3 font-medium">{order.id}</td>
-                  <td className="py-3">{order.customer}</td>
-                  <td className="py-3">{formatPrice(order.amount)}</td>
-                  <td className="py-3">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        statusColors[order.status] || ""
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="py-3 text-muted-foreground">{order.time}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* 빠른 상태 + 최근 주문 */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* 빠른 상태 */}
+        <div className="lg:col-span-1 space-y-3">
+          <h3 className="font-semibold text-foreground text-sm">주문 현황</h3>
+          {quickStats.map((qs) => (
+            <div
+              key={qs.label}
+              className={`rounded-xl ${qs.bg} border border-border p-4 flex items-center gap-3`}
+            >
+              <qs.icon size={20} className={qs.color} />
+              <div>
+                <p className="text-xs text-muted-foreground">{qs.label}</p>
+                <p className={`text-xl font-bold ${qs.color}`}>{qs.value}건</p>
+              </div>
+            </div>
+          ))}
+          <div className="space-y-2 pt-2">
+            <Link
+              href="/admin/orders"
+              className="block w-full text-center py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              주문 관리
+            </Link>
+            <Link
+              href="/admin/products"
+              className="block w-full text-center py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+            >
+              상품 관리
+            </Link>
+          </div>
+        </div>
+
+        {/* 최근 주문 */}
+        <div className="lg:col-span-3 rounded-xl bg-white border border-border p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-foreground text-sm">최근 주문</h3>
+            <Link
+              href="/admin/orders"
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              전체보기 <Eye size={12} />
+            </Link>
+          </div>
+          {recentOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              아직 주문이 없습니다.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="pb-2 font-medium text-muted-foreground text-xs">주문번호</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-xs">고객</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-xs hidden sm:table-cell">상품</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-xs text-right">금액</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-xs text-center">상태</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-xs text-right hidden sm:table-cell">시간</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrders.map((order: RecentOrder) => {
+                    const status = ORDER_STATUS[order.status as keyof typeof ORDER_STATUS] || {
+                      label: order.status,
+                      color: "",
+                    };
+                    return (
+                      <tr
+                        key={order.id}
+                        className="border-b border-border/50 last:border-0"
+                      >
+                        <td className="py-2.5 font-medium text-xs">{order.orderNumber}</td>
+                        <td className="py-2.5 text-xs">{order.recipientName}</td>
+                        <td className="py-2.5 text-xs text-muted-foreground hidden sm:table-cell">
+                          {order.items[0]?.product?.name?.slice(0, 15)}
+                          {order.items.length > 1 && ` 외 ${order.items.length - 1}건`}
+                        </td>
+                        <td className="py-2.5 text-xs text-right font-medium">
+                          {formatPrice(order.totalAmount)}
+                        </td>
+                        <td className="py-2.5 text-center">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${status.color}`}
+                          >
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="py-2.5 text-xs text-right text-muted-foreground hidden sm:table-cell">
+                          {dayjs(order.createdAt).fromNow()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

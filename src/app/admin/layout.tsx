@@ -43,7 +43,7 @@ export default function AdminLayout({
       >
         <div className="flex h-16 items-center justify-between px-6 border-b border-gray-700">
           <Link href="/admin" className="text-xl font-bold text-white">
-            YeAmall <span className="text-sm font-normal text-gray-400">Admin</span>
+            <span className="logo-text">YeAmall</span> <span className="text-sm font-normal text-gray-400">Admin</span>
           </Link>
           <button
             className="lg:hidden text-gray-400 hover:text-white"
