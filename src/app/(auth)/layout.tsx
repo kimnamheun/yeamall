@@ -10,8 +10,8 @@ export default function AuthLayout({
       {/* 심플 헤더 */}
       <header className="border-b border-border bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-14 items-center">
-          <Link href="/" className="text-xl font-bold text-primary">
-            YeAMall
+          <Link href="/" className="text-xl text-primary logo-text">
+            YeAmall
           </Link>
         </div>
       </header>

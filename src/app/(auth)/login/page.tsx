@@ -35,7 +35,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground">로그인</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            YeAMall에 오신 것을 환영합니다
+            YeAmall에 오신 것을 환영합니다
           </p>
         </div>
 
