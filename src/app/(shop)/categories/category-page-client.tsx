@@ -26,8 +26,8 @@ export default function CategoryPageClient({ categories, allProducts, initialSlu
   return (
     <div className="mx-auto max-w-7xl">
       <div className="flex min-h-[calc(100vh-8rem)]">
-        {/* 왼쪽 카테고리 사이드바 */}
-        <aside className="w-[90px] sm:w-[140px] lg:w-[180px] shrink-0 border-r border-border bg-gray-50/80 overflow-y-auto">
+        {/* 왼쪽 카테고리 사이드바 - 스크롤 시 고정 */}
+        <aside className="w-[90px] sm:w-[140px] lg:w-[180px] shrink-0 border-r border-border bg-gray-50/80 sticky top-[96px] lg:top-[140px] self-start h-[calc(100vh-96px)] lg:h-[calc(100vh-140px)] overflow-y-auto">
           <button
             onClick={() => setSelectedSlug(null)}
             className={cn(
