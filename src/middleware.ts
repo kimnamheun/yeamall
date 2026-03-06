@@ -28,22 +28,48 @@ export async function middleware(request: NextRequest) {
   // 세션 갱신
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 인증 필요 페이지 가드
+  const pathname = request.nextUrl.pathname;
+
+  // ============ 관리자 페이지 접근 제한 ============
+  if (pathname.startsWith("/admin")) {
+    // 비로그인 → 로그인 페이지로
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(url);
+    }
+
+    // 로그인했지만 관리자가 아닌 경우 → 홈으로
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_admin) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // ============ 인증 필요 페이지 가드 ============
   const protectedPaths = ["/mypage", "/orders", "/checkout"];
   const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
+    pathname.startsWith(path)
   );
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
+    url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
   // 로그인 상태에서 로그인/회원가입 페이지 접근 시 홈으로
   const authPaths = ["/login", "/register"];
-  const isAuthPage = authPaths.includes(request.nextUrl.pathname);
+  const isAuthPage = authPaths.includes(pathname);
 
   if (isAuthPage && user) {
     const url = request.nextUrl.clone();
