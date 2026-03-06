@@ -55,6 +55,7 @@ model Product {
   cartItems     CartItem[]
   reviews       Review[]
   qnas          Qna[]
+  wishlists     Wishlist[]
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
@@ -81,6 +82,7 @@ model Profile {
   cartItems     CartItem[]
   reviews       Review[]
   qnas          Qna[]
+  wishlists     Wishlist[]
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
 
@@ -193,4 +195,21 @@ model Qna {
 
   @@index([productId])
   @@map("qna")
+}
+
+// ============================================================
+// Wishlist - 찜하기/좋아요
+// ============================================================
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("wishlists")
 }

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useCartStore } from "@/stores/use-cart-store";
 import { SITE, CATEGORIES } from "@/lib/constants";
 import { signOut } from "@/actions/auth";
+import SearchAutocomplete from "@/components/shared/search-autocomplete";
 
 interface HeaderProps {
   user?: { email: string; name?: string } | null;
@@ -63,24 +64,9 @@ export default function Header({ user }: HeaderProps) {
               <h1 className="text-2xl text-primary logo-text">{SITE.name}</h1>
             </Link>
 
-            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xl mx-8">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  placeholder="건어물 검색..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-10 pl-4 pr-10 rounded-full border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-0 top-0 h-10 w-10 flex items-center justify-center rounded-r-full bg-primary text-white hover:bg-primary/90 transition-colors"
-                  aria-label="검색"
-                >
-                  <Search size={18} />
-                </button>
-              </div>
-            </form>
+            <div className="hidden sm:flex flex-1 max-w-xl mx-8">
+              <SearchAutocomplete />
+            </div>
 
             <div className="flex items-center gap-2">
               <Link href="/search" className="sm:hidden p-2" aria-label="검색">

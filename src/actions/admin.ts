@@ -142,6 +142,101 @@ export async function toggleProductSoldOut(id: string, isSoldOut: boolean) {
   return { success: true };
 }
 
+// ============ 카테고리 관리 ============
+
+export async function getAdminCategories() {
+  return prisma.category.findMany({
+    include: { _count: { select: { products: true } } },
+    orderBy: { sortOrder: "asc" },
+  });
+}
+
+export async function createCategory(formData: FormData) {
+  const name = formData.get("name") as string;
+  const slug = (formData.get("slug") as string) ||
+    name.toLowerCase().replace(/[^a-z0-9가-힣\s]/g, "").replace(/\s+/g, "-") + "-" + Date.now().toString(36);
+
+  const maxOrder = await prisma.category.aggregate({ _max: { sortOrder: true } });
+  const sortOrder = (maxOrder._max.sortOrder ?? 0) + 1;
+
+  await prisma.category.create({
+    data: {
+      name,
+      slug,
+      imageUrl: (formData.get("imageUrl") as string) || null,
+      sortOrder,
+      isActive: formData.get("isActive") !== "off",
+      parentId: (formData.get("parentId") as string) || null,
+    },
+  });
+
+  revalidatePath("/admin/categories");
+  revalidatePath("/categories");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function updateCategory(id: string, formData: FormData) {
+  await prisma.category.update({
+    where: { id },
+    data: {
+      name: formData.get("name") as string,
+      slug: formData.get("slug") as string,
+      imageUrl: (formData.get("imageUrl") as string) || null,
+      isActive: formData.get("isActive") !== "off",
+      parentId: (formData.get("parentId") as string) || null,
+    },
+  });
+
+  revalidatePath("/admin/categories");
+  revalidatePath("/categories");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function deleteCategory(id: string) {
+  const productCount = await prisma.product.count({ where: { categoryId: id } });
+  if (productCount > 0) {
+    return { success: false, error: `${productCount}개 상품이 등록된 카테고리입니다. 상품을 먼저 이동/삭제하세요.` };
+  }
+  await prisma.category.delete({ where: { id } });
+  revalidatePath("/admin/categories");
+  revalidatePath("/categories");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function reorderCategory(id: string, direction: "up" | "down") {
+  const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
+  const idx = categories.findIndex((c) => c.id === id);
+  if (idx === -1) return { success: false };
+
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= categories.length) return { success: false };
+
+  const current = categories[idx];
+  const swap = categories[swapIdx];
+
+  await Promise.all([
+    prisma.category.update({ where: { id: current.id }, data: { sortOrder: swap.sortOrder } }),
+    prisma.category.update({ where: { id: swap.id }, data: { sortOrder: current.sortOrder } }),
+  ]);
+
+  revalidatePath("/admin/categories");
+  revalidatePath("/categories");
+  return { success: true };
+}
+
+export async function toggleCategoryActive(id: string, isActive: boolean) {
+  await prisma.category.update({
+    where: { id },
+    data: { isActive },
+  });
+  revalidatePath("/admin/categories");
+  revalidatePath("/categories");
+  return { success: true };
+}
+
 // ============ 주문 관리 ============
 
 export async function getAdminOrders() {

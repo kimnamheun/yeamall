@@ -4,6 +4,11 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "전체상품",
+  description: "YeAmall의 모든 건어물 상품을 만나보세요. 멸치, 오징어, 새우, 명태 등 신선한 건어물을 합리적인 가격에!",
+  openGraph: {
+    title: "전체상품 | YeAmall",
+    description: "YeAmall의 모든 건어물 상품을 만나보세요.",
+  },
 };
 
 interface Props {

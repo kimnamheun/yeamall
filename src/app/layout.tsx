@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { SITE } from "@/lib/constants";
 import "./globals.css";
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://yeamall.vercel.app";
+
 export const metadata: Metadata = {
   title: {
     default: SITE.title,
@@ -9,6 +11,23 @@ export const metadata: Metadata = {
   },
   description: SITE.description,
   keywords: [...SITE.keywords],
+  metadataBase: new URL(BASE_URL),
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: BASE_URL,
+    siteName: SITE.name,
+    title: SITE.title,
+    description: SITE.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  verification: {},
+  alternates: {
+    canonical: BASE_URL,
+  },
 };
 
 export default function RootLayout({

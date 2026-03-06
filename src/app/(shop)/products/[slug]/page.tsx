@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts } from "@/actions/products";
+import { getProductReviews, getProductReviewStats } from "@/actions/review";
+import { getWishlistIds } from "@/actions/wishlist";
+import { SITE } from "@/lib/constants";
 import type { Metadata } from "next";
 import ProductDetailClient from "./product-detail-client";
 
@@ -10,8 +13,17 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
+  if (!product) return { title: "상품 상세" };
+
   return {
-    title: product?.name ?? "상품 상세",
+    title: `${product.name} | ${SITE.name}`,
+    description: product.description || `${product.name} - ${SITE.description}`,
+    openGraph: {
+      title: product.name,
+      description: product.description || SITE.description,
+      images: product.thumbnailUrl ? [product.thumbnailUrl] : [],
+      type: "website",
+    },
   };
 }
 
@@ -21,7 +33,20 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) notFound();
 
-  const relatedProducts = await getRelatedProducts(product.categoryId, product.id);
+  const [relatedProducts, reviews, reviewStats, wishlistIds] = await Promise.all([
+    getRelatedProducts(product.categoryId, product.id),
+    getProductReviews(product.id),
+    getProductReviewStats(product.id),
+    getWishlistIds(),
+  ]);
 
-  return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;
+  return (
+    <ProductDetailClient
+      product={product}
+      relatedProducts={relatedProducts}
+      reviews={reviews}
+      reviewStats={reviewStats}
+      isWishlisted={wishlistIds.includes(product.id)}
+    />
+  );
 }

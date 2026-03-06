@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       },
     ],
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24,
+  },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "dayjs"],
   },
 };
 
