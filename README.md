@@ -27,12 +27,12 @@ src/
 │   ├── (shop)/            # 쇼핑 영역 (홈, 상품, 카테고리, 장바구니, 검색, 찜)
 │   ├── (auth)/            # 로그인 / 회원가입
 │   ├── (account)/         # 마이페이지, 주문내역, 결제
-│   ├── admin/             # 관리자 (대시보드, 상품/주문/카테고리 관리)
+│   ├── admin/             # 관리자 (대시보드, 상품/주문/카테고리/회원/Q&A 관리, 통계)
 │   ├── api/               # API 라우트 (검색 자동완성)
 │   ├── auth/callback/     # OAuth 콜백
 │   ├── sitemap.ts         # SEO 사이트맵
 │   └── robots.ts          # SEO 로봇 설정
-├── actions/               # Server Actions (products, auth, admin, order, review, wishlist)
+├── actions/               # Server Actions (products, auth, admin, order, review, wishlist, qna)
 ├── components/
 │   ├── ui/                # shadcn/ui 컴포넌트
 │   ├── layout/            # Header, Footer, CategoryNav, MobileBottomNav
@@ -40,7 +40,7 @@ src/
 │   ├── home/              # HeroBanner (슬라이더)
 │   ├── shared/            # SearchAutocomplete, PriceDisplay
 │   └── cart/              # CartItem, CartSummary
-├── lib/                   # Supabase client, Prisma, utils, constants
+├── lib/                   # Supabase client, Prisma, utils, constants, auth-guard
 ├── stores/                # Zustand (장바구니)
 └── types/                 # TypeScript 타입
 ```
@@ -62,7 +62,7 @@ src/
 - **홈페이지**: 히어로 배너 슬라이더, 베스트 상품, 신상품, 오늘의 특가, 카테고리 추천
 - **카테고리 페이지**: 좌측 카테고리 사이드바 + 우측 상품 그리드
 - **검색**: 인기 검색어 TOP 10, 추천 상품, **실시간 자동완성 드롭다운**
-- **상품 상세**: 이미지, 옵션 선택, **상품 후기 시스템 (별점/리뷰)**, Q&A 탭
+- **상품 상세**: 이미지, 옵션 선택, **상품 후기 시스템 (별점/리뷰)**, **Q&A 게시판 (질문/답변, 비밀글)**
 - **찜하기(좋아요)**: 상품 하트 토글, 찜 목록 페이지
 - **장바구니 + 결제**: 포트원 V2 토스페이먼츠 연동
 
@@ -76,6 +76,14 @@ src/
 - **상품 관리**: 등록/수정/삭제, 원클릭 품절 토글, 저재고 경고
 - **주문 관리**: 상태별 필터, 상태 변경
 - **카테고리 관리**: CRUD, 순서 변경(위/아래), 활성화/비활성화 토글
+- **회원 관리**: 전체 회원 조회, 관리자 권한 토글
+- **Q&A 관리**: 전체 문의 조회, 미답변 카운트, 인라인 답변 작성
+- **통계**: 30일 매출 현황, 베스트셀러 TOP 10, 카테고리별 매출, 주문 상태 분포, 최근 가입 회원
+
+### 보안
+- **Server Actions 권한 체크**: 모든 관리자 API에 `requireAdmin()` 가드 적용
+- **미들웨어 인증**: `/admin` 경로 로그인 필수, 레이아웃에서 Prisma 기반 관리자 권한 검증
+- **Q&A 비밀글**: 작성자/관리자만 내용 확인 가능, 타인에게는 마스킹 처리
 
 ### SEO & 성능
 - **sitemap.xml**: 동적 생성 (상품/카테고리 포함)
@@ -117,9 +125,45 @@ src/
 - [x] 검색 자동완성 (API + 실시간 드롭다운)
 - [x] SEO 최적화 (sitemap.xml, robots.txt, Open Graph)
 - [x] 성능 최적화 (이미지 AVIF/WebP, 패키지 트리셰이킹)
-- [ ] Q&A 게시판 (게시판 답변 기능)
+- [x] Q&A 게시판 (질문 등록/삭제, 비밀글, 관리자 답변)
+
+### Phase 5 - 관리자 고도화 + Q&A + 통계 ✅
+- [x] Server Actions 권한 체크 (`requireAdmin()` 가드 전체 적용)
+- [x] 회원 관리 페이지 (관리자 권한 토글)
+- [x] Q&A 게시판 (상품 상세 질문/답변, 비밀글 마스킹)
+- [x] 관리자 Q&A 관리 (미답변 카운트, 인라인 답변)
+- [x] 나의 문의 페이지 (`/mypage/qna`)
+- [x] 관리자 통계 페이지 (매출/베스트셀러/카테고리/주문상태/회원)
+- [x] 관리자 레이아웃 보안 개선 (Prisma 기반 권한 검증)
+- [x] CLI 관리자 설정 스크립트 (`pnpm set-admin`)
 
 ## 변경 이력
+
+### 2025-03-09 - Phase 5: 관리자 고도화 + Q&A + 통계
+
+#### Server Actions 권한 체크
+- `requireAdmin()` / `requireUser()` 공용 헬퍼 생성 (`src/lib/auth-guard.ts`)
+- `admin.ts` 17개 함수 + `review.ts` 관리자 함수에 권한 가드 적용
+- 비관리자 접근 시 에러 반환으로 보안 강화
+
+#### Q&A 게시판
+- 상품 상세 Q&A 탭: 질문 등록/삭제, 비밀글 체크, 답변 상태 표시
+- 비밀글 마스킹: 작성자/관리자만 내용 확인, 타인에게 `***` 처리
+- 관리자 Q&A 관리 (`/admin/qna`): 전체 문의 목록, 미답변 카운트, 인라인 답변 폼
+- 나의 문의 페이지 (`/mypage/qna`): 내가 작성한 Q&A 목록, 답변 상태 확인
+
+#### 관리자 통계 페이지
+- `/admin/stats`: 30일 기준 데이터
+- 요약 카드: 총 매출, 총 주문, 일평균 매출
+- 베스트셀러 TOP 10 테이블
+- 카테고리별 매출 (CSS 프로그레스바 + 비율)
+- 주문 상태별 분포 (상태 카드 그리드)
+- 최근 가입 회원 / 일별 매출 상세 테이블
+
+#### 회원 관리 + 관리자 설정
+- 회원 관리 페이지 (`/admin/members`): 전체 회원, 주문수/리뷰수, 관리자 권한 토글
+- CLI 관리자 설정: `pnpm set-admin <이메일>` 스크립트
+- 관리자 레이아웃 보안 개선: Supabase RLS 우회 → Prisma 직접 조회
 
 ### 2025-03-06 (2차) - Phase 3~4 완료
 
@@ -184,6 +228,7 @@ pnpm install
 pnpm dev        # 개발 서버 (localhost:3000)
 pnpm build      # 프로덕션 빌드
 pnpm db:studio  # Prisma Studio (DB 관리)
+pnpm set-admin <이메일>  # 특정 회원을 관리자로 설정
 ```
 
 ## 배송비 정책
