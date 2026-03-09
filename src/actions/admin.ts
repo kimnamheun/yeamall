@@ -2,10 +2,14 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth-guard";
+import dayjs from "dayjs";
 
 // ============ 대시보드 통계 ============
 
 export async function getDashboardStats() {
+  await requireAdmin();
+
   const [totalProducts, activeProducts, totalOrders, orders] =
     await Promise.all([
       prisma.product.count(),
@@ -43,6 +47,8 @@ export async function getDashboardStats() {
 }
 
 export async function getRecentOrders(take = 10) {
+  await requireAdmin();
+
   return prisma.order.findMany({
     include: {
       user: true,
@@ -56,6 +62,8 @@ export async function getRecentOrders(take = 10) {
 // ============ 상품 관리 ============
 
 export async function getAdminProducts() {
+  await requireAdmin();
+
   return prisma.product.findMany({
     include: { category: true },
     orderBy: { createdAt: "desc" },
@@ -63,6 +71,8 @@ export async function getAdminProducts() {
 }
 
 export async function createProduct(formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const slug = name
     .toLowerCase()
@@ -99,6 +109,8 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
+  await requireAdmin();
+
   await prisma.product.update({
     where: { id },
     data: {
@@ -125,6 +137,8 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
+  await requireAdmin();
+
   await prisma.product.delete({ where: { id } });
   revalidatePath("/admin/products");
   revalidatePath("/products");
@@ -133,6 +147,8 @@ export async function deleteProduct(id: string) {
 }
 
 export async function toggleProductSoldOut(id: string, isSoldOut: boolean) {
+  await requireAdmin();
+
   await prisma.product.update({
     where: { id },
     data: { isSoldOut },
@@ -145,6 +161,8 @@ export async function toggleProductSoldOut(id: string, isSoldOut: boolean) {
 // ============ 카테고리 관리 ============
 
 export async function getAdminCategories() {
+  await requireAdmin();
+
   return prisma.category.findMany({
     include: { _count: { select: { products: true } } },
     orderBy: { sortOrder: "asc" },
@@ -152,6 +170,8 @@ export async function getAdminCategories() {
 }
 
 export async function createCategory(formData: FormData) {
+  await requireAdmin();
+
   const name = formData.get("name") as string;
   const slug = (formData.get("slug") as string) ||
     name.toLowerCase().replace(/[^a-z0-9가-힣\s]/g, "").replace(/\s+/g, "-") + "-" + Date.now().toString(36);
@@ -177,6 +197,8 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(id: string, formData: FormData) {
+  await requireAdmin();
+
   await prisma.category.update({
     where: { id },
     data: {
@@ -195,6 +217,8 @@ export async function updateCategory(id: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
+  await requireAdmin();
+
   const productCount = await prisma.product.count({ where: { categoryId: id } });
   if (productCount > 0) {
     return { success: false, error: `${productCount}개 상품이 등록된 카테고리입니다. 상품을 먼저 이동/삭제하세요.` };
@@ -207,6 +231,8 @@ export async function deleteCategory(id: string) {
 }
 
 export async function reorderCategory(id: string, direction: "up" | "down") {
+  await requireAdmin();
+
   const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
   const idx = categories.findIndex((c) => c.id === id);
   if (idx === -1) return { success: false };
@@ -228,6 +254,8 @@ export async function reorderCategory(id: string, direction: "up" | "down") {
 }
 
 export async function toggleCategoryActive(id: string, isActive: boolean) {
+  await requireAdmin();
+
   await prisma.category.update({
     where: { id },
     data: { isActive },
@@ -240,6 +268,8 @@ export async function toggleCategoryActive(id: string, isActive: boolean) {
 // ============ 주문 관리 ============
 
 export async function getAdminOrders() {
+  await requireAdmin();
+
   return prisma.order.findMany({
     include: {
       user: true,
@@ -250,6 +280,8 @@ export async function getAdminOrders() {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
+  await requireAdmin();
+
   await prisma.order.update({
     where: { id: orderId },
     data: { status: status as never },
@@ -261,6 +293,8 @@ export async function updateOrderStatus(orderId: string, status: string) {
 // ============ 회원 관리 ============
 
 export async function getAdminMembers() {
+  await requireAdmin();
+
   return prisma.profile.findMany({
     include: {
       _count: { select: { orders: true, reviews: true } },
@@ -270,10 +304,117 @@ export async function getAdminMembers() {
 }
 
 export async function toggleMemberAdmin(id: string, isAdmin: boolean) {
+  await requireAdmin();
+
   await prisma.profile.update({
     where: { id },
     data: { isAdmin },
   });
   revalidatePath("/admin/members");
   return { success: true };
+}
+
+// ============ 통계 ============
+
+export async function getSalesByPeriod(days: number = 30) {
+  await requireAdmin();
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const orders = await prisma.order.findMany({
+    where: {
+      createdAt: { gte: startDate },
+      status: { notIn: ["CANCELLED", "RETURNED"] },
+    },
+    select: { totalAmount: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const dailySales: Record<string, { date: string; amount: number; count: number }> = {};
+  orders.forEach((order) => {
+    const dateKey = dayjs(order.createdAt).format("YYYY-MM-DD");
+    if (!dailySales[dateKey]) {
+      dailySales[dateKey] = { date: dateKey, amount: 0, count: 0 };
+    }
+    dailySales[dateKey].amount += order.totalAmount;
+    dailySales[dateKey].count += 1;
+  });
+
+  return Object.values(dailySales);
+}
+
+export async function getTopProducts(limit: number = 10) {
+  await requireAdmin();
+
+  const items = await prisma.orderItem.findMany({
+    include: {
+      product: { select: { id: true, name: true, thumbnailUrl: true } },
+    },
+  });
+
+  const productMap: Record<string, { name: string; thumbnailUrl: string | null; totalQuantity: number; totalRevenue: number }> = {};
+  items.forEach((item) => {
+    const pid = item.productId;
+    if (!productMap[pid]) {
+      productMap[pid] = {
+        name: item.product.name,
+        thumbnailUrl: item.product.thumbnailUrl,
+        totalQuantity: 0,
+        totalRevenue: 0,
+      };
+    }
+    productMap[pid].totalQuantity += item.quantity;
+    productMap[pid].totalRevenue += item.price * item.quantity;
+  });
+
+  return Object.values(productMap)
+    .sort((a, b) => b.totalQuantity - a.totalQuantity)
+    .slice(0, limit);
+}
+
+export async function getSalesByCategory() {
+  await requireAdmin();
+
+  const items = await prisma.orderItem.findMany({
+    include: {
+      product: { select: { categoryId: true, category: { select: { name: true } } } },
+    },
+  });
+
+  const categoryMap: Record<string, { name: string; revenue: number; count: number }> = {};
+  items.forEach((item) => {
+    const catId = item.product.categoryId;
+    const catName = item.product.category?.name || "미분류";
+    if (!categoryMap[catId]) {
+      categoryMap[catId] = { name: catName, revenue: 0, count: 0 };
+    }
+    categoryMap[catId].revenue += item.price * item.quantity;
+    categoryMap[catId].count += item.quantity;
+  });
+
+  return Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue);
+}
+
+export async function getOrderStatusDistribution() {
+  await requireAdmin();
+
+  const result = await prisma.order.groupBy({
+    by: ["status"],
+    _count: true,
+  });
+  return result.map((r) => ({
+    status: r.status,
+    count: r._count,
+  }));
+}
+
+export async function getRecentMembers(limit: number = 10) {
+  await requireAdmin();
+
+  return prisma.profile.findMany({
+    select: { id: true, name: true, email: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
 }

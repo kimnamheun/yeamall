@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   FolderTree,
   Users,
+  MessageSquare,
   BarChart3,
   Menu,
   X,
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/admin/orders", icon: ShoppingCart, label: "주문 관리" },
   { href: "/admin/categories", icon: FolderTree, label: "카테고리 관리" },
   { href: "/admin/members", icon: Users, label: "회원 관리" },
+  { href: "/admin/qna", icon: MessageSquare, label: "Q&A 관리" },
   { href: "/admin/stats", icon: BarChart3, label: "통계" },
 ];
 

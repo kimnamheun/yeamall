@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { ShoppingCart, Minus, Plus, ChevronRight, Heart, Star, Trash2 } from "lucide-react";
+import { ShoppingCart, Minus, Plus, ChevronRight, Heart, Star, Trash2, Lock } from "lucide-react";
 import { useCartStore } from "@/stores/use-cart-store";
 import { formatPrice, getDiscountRate } from "@/lib/utils";
 import { createReview, deleteReview } from "@/actions/review";
+import { createQna, deleteQna } from "@/actions/qna";
 import { toggleWishlist } from "@/actions/wishlist";
 import ProductGrid from "@/components/product/product-grid";
 import type { Product } from "@/types/product";
@@ -38,12 +39,25 @@ interface ReviewStats {
   distribution: number[];
 }
 
+interface QnaItem {
+  id: string;
+  question: string;
+  answer: string | null;
+  isPrivate: boolean;
+  isMasked: boolean;
+  createdAt: Date;
+  userId: string;
+  user: { id: string; name: string | null; email: string };
+}
+
 interface Props {
   product: Product;
   relatedProducts: Product[];
   reviews: ReviewItem[];
   reviewStats: ReviewStats;
   isWishlisted: boolean;
+  qnas: QnaItem[];
+  qnaCount: number;
 }
 
 export default function ProductDetailClient({
@@ -52,6 +66,8 @@ export default function ProductDetailClient({
   reviews,
   reviewStats,
   isWishlisted: initialWishlisted,
+  qnas,
+  qnaCount,
 }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"detail" | "review" | "qna">("detail");
@@ -64,6 +80,12 @@ export default function ProductDetailClient({
   const [reviewContent, setReviewContent] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [showReviewForm, setShowReviewForm] = useState(false);
+
+  // Q&A form state
+  const [qnaContent, setQnaContent] = useState("");
+  const [qnaIsPrivate, setQnaIsPrivate] = useState(false);
+  const [qnaError, setQnaError] = useState("");
+  const [showQnaForm, setShowQnaForm] = useState(false);
 
   const handleAddToCart = () => {
     addItem(
@@ -115,6 +137,33 @@ export default function ProductDetailClient({
   const handleDeleteReview = async (reviewId: string) => {
     if (!confirm("리뷰를 삭제하시겠습니까?")) return;
     await deleteReview(reviewId);
+    window.location.reload();
+  };
+
+  const handleSubmitQna = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setQnaError("");
+
+    const formData = new FormData();
+    formData.set("productId", product.id);
+    formData.set("question", qnaContent);
+    if (qnaIsPrivate) formData.set("isPrivate", "on");
+
+    const result = await createQna(formData);
+    if (result.error) {
+      setQnaError(result.error);
+      return;
+    }
+
+    setQnaContent("");
+    setQnaIsPrivate(false);
+    setShowQnaForm(false);
+    window.location.reload();
+  };
+
+  const handleDeleteQna = async (qnaId: string) => {
+    if (!confirm("문의를 삭제하시겠습니까?")) return;
+    await deleteQna(qnaId);
     window.location.reload();
   };
 
@@ -242,7 +291,7 @@ export default function ProductDetailClient({
             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
               {tab === "detail" && "상품상세"}
               {tab === "review" && `상품후기 (${reviewStats.count})`}
-              {tab === "qna" && "Q&A (0)"}
+              {tab === "qna" && `Q&A (${qnaCount})`}
             </button>
           ))}
         </div>
@@ -337,9 +386,71 @@ export default function ProductDetailClient({
         )}
 
         {activeTab === "qna" && (
-          <div className="text-center py-16 text-muted-foreground">
-            <p>등록된 질문이 없습니다.</p>
-            <p className="text-sm mt-2">궁금한 점을 질문해주세요!</p>
+          <div>
+            <div className="flex justify-end mb-6">
+              <button onClick={() => setShowQnaForm(!showQnaForm)} className="h-9 px-4 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90">
+                {showQnaForm ? "취소" : "질문 작성"}
+              </button>
+            </div>
+
+            {showQnaForm && (
+              <form onSubmit={handleSubmitQna} className="mb-8 p-6 border border-border rounded-xl space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">질문 내용</label>
+                  <textarea value={qnaContent} onChange={(e) => setQnaContent(e.target.value)} placeholder="궁금한 점을 질문해주세요" className="w-full h-28 px-4 py-3 rounded-lg border border-border text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary outline-none" required />
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={qnaIsPrivate} onChange={(e) => setQnaIsPrivate(e.target.checked)} className="rounded border-border" />
+                  비밀글로 작성
+                </label>
+                {qnaError && <p className="text-sm text-red-500">{qnaError}</p>}
+                <button type="submit" className="h-10 px-6 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90">질문 등록</button>
+              </form>
+            )}
+
+            {qnas.length > 0 ? (
+              <div className="space-y-4">
+                {qnas.map((qna) => (
+                  <div key={qna.id} className="p-5 border border-border rounded-xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium">
+                          {qna.isMasked ? "***" : (qna.user.name || qna.user.email.split("@")[0])}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{dayjs(qna.createdAt).fromNow()}</span>
+                        {qna.isPrivate && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Lock size={10} /> 비밀글
+                          </span>
+                        )}
+                        {qna.answer ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">답변완료</span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-800">답변대기</span>
+                        )}
+                      </div>
+                      {!qna.isMasked && (
+                        <button onClick={() => handleDeleteQna(qna.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500" title="삭제">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">{qna.question}</p>
+                    {qna.answer && (
+                      <div className="mt-3 ml-4 p-4 bg-muted/50 rounded-lg border-l-4 border-primary">
+                        <p className="text-xs font-medium text-primary mb-1">판매자 답변</p>
+                        <p className="text-sm text-foreground leading-relaxed">{qna.answer}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : !showQnaForm && (
+              <div className="text-center py-16 text-muted-foreground">
+                <p>등록된 질문이 없습니다.</p>
+                <p className="text-sm mt-2">궁금한 점을 질문해주세요!</p>
+              </div>
+            )}
           </div>
         )}
       </div>

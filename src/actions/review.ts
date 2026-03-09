@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getUser } from "./auth";
+import { requireAdmin } from "@/lib/auth-guard";
 
 export async function getProductReviews(productId: string) {
   return prisma.review.findMany({
@@ -101,6 +102,8 @@ export async function deleteReview(reviewId: string) {
 // ============ 관리자용 ============
 
 export async function getAdminReviews() {
+  await requireAdmin();
+
   return prisma.review.findMany({
     include: {
       user: { select: { id: true, name: true, email: true } },
@@ -111,6 +114,8 @@ export async function getAdminReviews() {
 }
 
 export async function deleteReviewAdmin(reviewId: string) {
+  await requireAdmin();
+
   const review = await prisma.review.findUnique({
     where: { id: reviewId },
     include: { product: { select: { slug: true } } },

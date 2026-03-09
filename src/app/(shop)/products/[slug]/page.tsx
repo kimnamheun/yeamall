@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts } from "@/actions/products";
 import { getProductReviews, getProductReviewStats } from "@/actions/review";
+import { getProductQnas, getProductQnaCount } from "@/actions/qna";
 import { getWishlistIds } from "@/actions/wishlist";
 import { SITE } from "@/lib/constants";
 import type { Metadata } from "next";
@@ -33,11 +34,13 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) notFound();
 
-  const [relatedProducts, reviews, reviewStats, wishlistIds] = await Promise.all([
+  const [relatedProducts, reviews, reviewStats, wishlistIds, qnas, qnaCount] = await Promise.all([
     getRelatedProducts(product.categoryId, product.id),
     getProductReviews(product.id),
     getProductReviewStats(product.id),
     getWishlistIds(),
+    getProductQnas(product.id),
+    getProductQnaCount(product.id),
   ]);
 
   return (
@@ -47,6 +50,8 @@ export default async function ProductDetailPage({ params }: Props) {
       reviews={reviews}
       reviewStats={reviewStats}
       isWishlisted={wishlistIds.includes(product.id)}
+      qnas={qnas}
+      qnaCount={qnaCount}
     />
   );
 }
