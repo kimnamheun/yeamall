@@ -257,3 +257,23 @@ export async function updateOrderStatus(orderId: string, status: string) {
   revalidatePath("/admin/orders");
   return { success: true };
 }
+
+// ============ 회원 관리 ============
+
+export async function getAdminMembers() {
+  return prisma.profile.findMany({
+    include: {
+      _count: { select: { orders: true, reviews: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function toggleMemberAdmin(id: string, isAdmin: boolean) {
+  await prisma.profile.update({
+    where: { id },
+    data: { isAdmin },
+  });
+  revalidatePath("/admin/members");
+  return { success: true };
+}

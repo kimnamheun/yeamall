@@ -31,25 +31,12 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // ============ 관리자 페이지 접근 제한 ============
+  // 미들웨어에서는 로그인 여부만 체크 (관리자 권한은 admin layout에서 Prisma로 확인)
   if (pathname.startsWith("/admin")) {
-    // 비로그인 → 로그인 페이지로
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(url);
-    }
-
-    // 로그인했지만 관리자가 아닌 경우 → 홈으로
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
       return NextResponse.redirect(url);
     }
   }
