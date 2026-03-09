@@ -97,3 +97,27 @@ export async function getUserProfile() {
 
   return profile;
 }
+
+export async function updateProfile(formData: FormData) {
+  const user = await getUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+
+  const name = formData.get("name") as string;
+  const phone = formData.get("phone") as string;
+  const zipCode = formData.get("zipCode") as string;
+  const address = formData.get("address") as string;
+  const addressDetail = formData.get("addressDetail") as string;
+
+  await prisma.profile.update({
+    where: { id: user.id },
+    data: {
+      name: name || null,
+      phone: phone || null,
+      zipCode: zipCode || null,
+      address: address || null,
+      addressDetail: addressDetail || null,
+    },
+  });
+
+  return { success: true };
+}

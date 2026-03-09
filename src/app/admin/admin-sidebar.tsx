@@ -9,6 +9,7 @@ import {
   FolderTree,
   Users,
   MessageSquare,
+  Star,
   BarChart3,
   Menu,
   X,
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/admin/categories", icon: FolderTree, label: "카테고리 관리" },
   { href: "/admin/members", icon: Users, label: "회원 관리" },
   { href: "/admin/qna", icon: MessageSquare, label: "Q&A 관리" },
+  { href: "/admin/reviews", icon: Star, label: "리뷰 관리" },
   { href: "/admin/stats", icon: BarChart3, label: "통계" },
 ];
 

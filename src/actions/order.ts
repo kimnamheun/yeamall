@@ -72,3 +72,58 @@ export async function confirmPayment(orderId: string, paymentKey: string) {
 
   return { success: true };
 }
+
+// ============ 내 주문 조회 ============
+
+export async function getMyOrders() {
+  const user = await getUser();
+  if (!user) return [];
+
+  return prisma.order.findMany({
+    where: { userId: user.id },
+    include: {
+      items: {
+        include: {
+          product: { select: { id: true, slug: true, thumbnailUrl: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getMyOrderCounts() {
+  const user = await getUser();
+  if (!user) return { PENDING: 0, PAID: 0, PREPARING: 0, SHIPPING: 0, DELIVERED: 0 };
+
+  const result = await prisma.order.groupBy({
+    by: ["status"],
+    where: { userId: user.id },
+    _count: true,
+  });
+
+  const counts: Record<string, number> = {};
+  result.forEach((r) => {
+    counts[r.status] = r._count;
+  });
+  return counts;
+}
+
+export async function getOrderDetail(orderId: string) {
+  const user = await getUser();
+  if (!user) return null;
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: {
+        include: {
+          product: { select: { id: true, slug: true, thumbnailUrl: true } },
+        },
+      },
+    },
+  });
+
+  if (!order || order.userId !== user.id) return null;
+  return order;
+}

@@ -1,37 +1,29 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Package,
   Heart,
   Star,
   MessageSquare,
-  MapPin,
   User,
   ChevronRight,
-  ShoppingBag,
   Truck,
   CheckCircle,
+  CreditCard,
 } from "lucide-react";
+import { getUserProfile } from "@/actions/auth";
+import { getMyOrderCounts } from "@/actions/order";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "마이페이지",
 };
 
-export default function MyPage() {
-  // TODO: Supabase Auth 연동 후 실제 사용자 데이터
-  const user = {
-    name: "홍길동",
-    email: "hong@example.com",
-    points: 5000,
-    grade: "일반회원",
-  };
+export default async function MyPage() {
+  const profile = await getUserProfile();
+  if (!profile) redirect("/login?redirect=/mypage");
 
-  const orderCounts = {
-    pending: 0,
-    preparing: 1,
-    shipping: 0,
-    delivered: 3,
-  };
+  const orderCounts = await getMyOrderCounts();
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
@@ -46,15 +38,17 @@ export default function MyPage() {
             </div>
             <div>
               <h2 className="font-semibold text-foreground">
-                {user.name}님 환영합니다!
+                {profile.name || "회원"}님 환영합니다!
               </h2>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">{user.grade}</p>
+            <p className="text-xs text-muted-foreground">
+              {profile.isAdmin ? "관리자" : "일반회원"}
+            </p>
             <p className="text-sm font-semibold text-primary">
-              포인트: {user.points.toLocaleString()}P
+              포인트: {profile.points.toLocaleString()}P
             </p>
           </div>
         </div>
@@ -72,31 +66,31 @@ export default function MyPage() {
           </Link>
         </div>
         <div className="grid grid-cols-4 gap-4 text-center">
-          <Link href="/orders?status=pending" className="group">
+          <Link href="/orders" className="group">
             <div className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-muted transition-colors">
-              <ShoppingBag size={24} className="text-muted-foreground group-hover:text-primary" />
-              <span className="text-2xl font-bold text-foreground">{orderCounts.pending}</span>
-              <span className="text-xs text-muted-foreground">결제대기</span>
+              <CreditCard size={24} className="text-muted-foreground group-hover:text-primary" />
+              <span className="text-2xl font-bold text-foreground">{(orderCounts["PENDING"] || 0) + (orderCounts["PAID"] || 0)}</span>
+              <span className="text-xs text-muted-foreground">결제완료</span>
             </div>
           </Link>
-          <Link href="/orders?status=preparing" className="group">
+          <Link href="/orders" className="group">
             <div className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-muted transition-colors">
               <Package size={24} className="text-muted-foreground group-hover:text-primary" />
-              <span className="text-2xl font-bold text-foreground">{orderCounts.preparing}</span>
+              <span className="text-2xl font-bold text-foreground">{orderCounts["PREPARING"] || 0}</span>
               <span className="text-xs text-muted-foreground">상품준비</span>
             </div>
           </Link>
-          <Link href="/orders?status=shipping" className="group">
+          <Link href="/orders" className="group">
             <div className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-muted transition-colors">
               <Truck size={24} className="text-muted-foreground group-hover:text-primary" />
-              <span className="text-2xl font-bold text-foreground">{orderCounts.shipping}</span>
+              <span className="text-2xl font-bold text-foreground">{orderCounts["SHIPPING"] || 0}</span>
               <span className="text-xs text-muted-foreground">배송중</span>
             </div>
           </Link>
-          <Link href="/orders?status=delivered" className="group">
+          <Link href="/orders" className="group">
             <div className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-muted transition-colors">
               <CheckCircle size={24} className="text-muted-foreground group-hover:text-primary" />
-              <span className="text-2xl font-bold text-foreground">{orderCounts.delivered}</span>
+              <span className="text-2xl font-bold text-foreground">{orderCounts["DELIVERED"] || 0}</span>
               <span className="text-xs text-muted-foreground">배송완료</span>
             </div>
           </Link>
@@ -107,10 +101,9 @@ export default function MyPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           { href: "/orders", icon: Package, label: "주문 내역", desc: "주문/배송 조회" },
-          { href: "/mypage/profile", icon: User, label: "회원 정보 수정", desc: "개인정보 변경" },
-          { href: "/mypage/addresses", icon: MapPin, label: "배송지 관리", desc: "배송지 추가/수정" },
+          { href: "/mypage/profile", icon: User, label: "회원 정보 수정", desc: "개인정보 · 배송지 변경" },
           { href: "/mypage/reviews", icon: Star, label: "나의 후기", desc: "작성한 후기 관리" },
-          { href: "/mypage/wishlist", icon: Heart, label: "찜한 상품", desc: "관심 상품 목록" },
+          { href: "/wishlist", icon: Heart, label: "찜한 상품", desc: "관심 상품 목록" },
           { href: "/mypage/qna", icon: MessageSquare, label: "나의 문의", desc: "문의 내역 확인" },
         ].map((item) => (
           <Link

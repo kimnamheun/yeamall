@@ -99,6 +99,21 @@ export async function deleteReview(reviewId: string) {
   return { success: true };
 }
 
+// ============ 내 리뷰 ============
+
+export async function getMyReviews() {
+  const user = await getUser();
+  if (!user) return [];
+
+  return prisma.review.findMany({
+    where: { userId: user.id },
+    include: {
+      product: { select: { id: true, name: true, slug: true, thumbnailUrl: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 // ============ 관리자용 ============
 
 export async function getAdminReviews() {

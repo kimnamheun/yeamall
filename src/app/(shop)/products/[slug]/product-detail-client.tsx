@@ -300,9 +300,70 @@ export default function ProductDetailClient({
       <div className="mb-16">
         {activeTab === "detail" && (
           <div className="prose max-w-none">
-            <div className="bg-muted/50 rounded-xl p-8 text-center text-muted-foreground">
-              <p className="text-lg">{product.description}</p>
-              <p className="mt-4 text-sm">상세 이미지는 준비 중입니다.</p>
+            {/* 상품 설명 */}
+            {product.description && (
+              <div className="mb-8 p-6 bg-muted/30 rounded-xl">
+                <p className="text-base text-foreground leading-relaxed whitespace-pre-line">
+                  {product.description}
+                </p>
+              </div>
+            )}
+
+            {/* 상품 기본 정보 테이블 */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-foreground mb-4">상품 정보</h3>
+              <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+                <tbody>
+                  {product.origin && (
+                    <tr className="border-b border-border">
+                      <td className="px-4 py-3 bg-muted/50 text-muted-foreground font-medium w-32">원산지</td>
+                      <td className="px-4 py-3 text-foreground">{product.origin}</td>
+                    </tr>
+                  )}
+                  {product.weight && (
+                    <tr className="border-b border-border">
+                      <td className="px-4 py-3 bg-muted/50 text-muted-foreground font-medium w-32">중량/수량</td>
+                      <td className="px-4 py-3 text-foreground">{product.weight}</td>
+                    </tr>
+                  )}
+                  <tr className="border-b border-border">
+                    <td className="px-4 py-3 bg-muted/50 text-muted-foreground font-medium w-32">배송비</td>
+                    <td className="px-4 py-3 text-foreground">{product.shippingInfo || "3,000원 (7만원 이상 무료배송)"}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 bg-muted/50 text-muted-foreground font-medium w-32">재고</td>
+                    <td className="px-4 py-3">
+                      <span className={product.stock > 0 ? "text-green-600" : "text-red-500"}>
+                        {product.stock > 0 ? `${product.stock}개 남음` : "품절"}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* 배송/교환/반품 안내 */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">배송/교환/반품 안내</h3>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="font-medium text-foreground mb-2">배송 안내</p>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>배송비: 3,000원 (7만원 이상 무료배송)</li>
+                    <li>제주/도서산간 지역 추가 배송비 발생</li>
+                    <li>결제 완료 후 1~3일 이내 출고 (영업일 기준)</li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="font-medium text-foreground mb-2">교환/반품 안내</p>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>상품 수령 후 7일 이내 교환/반품 가능</li>
+                    <li>고객 변심 시 반품 배송비 고객 부담</li>
+                    <li>상품 하자 시 교환/반품 배송비 무료</li>
+                    <li>식품 특성상 단순 변심에 의한 반품은 제한될 수 있습니다</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         )}
