@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { ShoppingCart, Minus, Plus, ChevronRight, Heart, Star, Trash2, Lock } from "lucide-react";
 import { useCartStore } from "@/stores/use-cart-store";
+import { useRecentlyViewed } from "@/stores/use-recently-viewed";
 import { formatPrice, getDiscountRate } from "@/lib/utils";
 import { createReview, deleteReview } from "@/actions/review";
 import { createQna, deleteQna } from "@/actions/qna";
@@ -74,6 +75,11 @@ export default function ProductDetailClient({
   const [wishlisted, setWishlisted] = useState(initialWishlisted);
   const [isPending, startTransition] = useTransition();
   const addItem = useCartStore((s) => s.addItem);
+  const addRecentlyViewed = useRecentlyViewed((s) => s.addItem);
+
+  useEffect(() => {
+    addRecentlyViewed(product.id);
+  }, [product.id, addRecentlyViewed]);
 
   // Review form state
   const [rating, setRating] = useState(5);
