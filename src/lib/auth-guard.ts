@@ -19,6 +19,24 @@ export async function requireAdmin() {
   return user;
 }
 
+export async function requirePartner() {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+    select: { isPartner: true },
+  });
+
+  if (!profile?.isPartner) {
+    throw new Error("파트너 권한이 필요합니다.");
+  }
+
+  return user;
+}
+
 export async function requireUser() {
   const user = await getUser();
   if (!user) {

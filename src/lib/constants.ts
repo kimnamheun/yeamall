@@ -65,3 +65,29 @@ export const ORDER_STATUS = {
 export const ORDER_STATUS_LABELS: Record<string, string> = Object.fromEntries(
   Object.entries(ORDER_STATUS).map(([k, v]) => [k, v.label])
 );
+
+// ==============================
+// 택배사 (Carriers)
+// ==============================
+export const CARRIERS = [
+  { code: "cj", name: "CJ대한통운", goodsflowCode: "04" },
+  { code: "hanjin", name: "한진택배", goodsflowCode: "05" },
+  { code: "lotte", name: "롯데택배", goodsflowCode: "08" },
+  { code: "logen", name: "로젠택배", goodsflowCode: "06" },
+  { code: "epost", name: "우체국택배", goodsflowCode: "01" },
+] as const;
+
+export type CarrierCode = (typeof CARRIERS)[number]["code"];
+
+export function getCarrierByCode(code: string) {
+  return CARRIERS.find((c) => c.code === code) ?? null;
+}
+
+export function getGoodsflowTrackingUrl(
+  carrierCode: string,
+  trackingNumber: string
+): string | null {
+  const carrier = getCarrierByCode(carrierCode);
+  if (!carrier) return null;
+  return `https://www.goodsflow.com/tracking/tracking.html?carrier=${carrier.goodsflowCode}&invoice=${trackingNumber}`;
+}

@@ -41,6 +41,16 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ============ 파트너 페이지 접근 제한 ============
+  if (pathname.startsWith("/partner")) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
   // ============ 인증 필요 페이지 가드 ============
   const protectedPaths = ["/mypage", "/orders", "/checkout"];
   const isProtected = protectedPaths.some((path) =>

@@ -3,7 +3,8 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { ORDER_STATUS } from "@/lib/constants";
+import { ORDER_STATUS, getCarrierByCode } from "@/lib/constants";
+import TrackingButton from "./tracking-button";
 import { getUser } from "@/actions/auth";
 import { getOrderDetail } from "@/actions/order";
 import dayjs from "dayjs";
@@ -115,6 +116,45 @@ export default async function OrderDetailPage({ params }: Props) {
                 <span className="text-foreground">{order.deliveryMemo}</span>
               </div>
             )}
+            {/* 배송 추적 정보 */}
+            {(order.status === "SHIPPING" || order.status === "DELIVERED") &&
+              order.trackingNumber && (
+                <div className="mt-4 pt-4 border-t border-border space-y-3">
+                  <div className="flex">
+                    <span className="w-20 text-muted-foreground shrink-0">
+                      택배사
+                    </span>
+                    <span className="text-foreground">
+                      {getCarrierByCode(order.carrierCode ?? "")?.name ??
+                        order.carrierCode}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-20 text-muted-foreground shrink-0">
+                      송장번호
+                    </span>
+                    <span className="text-foreground font-mono">
+                      {order.trackingNumber}
+                    </span>
+                  </div>
+                  {order.shippedAt && (
+                    <div className="flex">
+                      <span className="w-20 text-muted-foreground shrink-0">
+                        발송일시
+                      </span>
+                      <span className="text-foreground">
+                        {dayjs(order.shippedAt).format(
+                          "YYYY년 MM월 DD일 HH:mm"
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  <TrackingButton
+                    carrierCode={order.carrierCode!}
+                    trackingNumber={order.trackingNumber}
+                  />
+                </div>
+              )}
           </div>
         </div>
 

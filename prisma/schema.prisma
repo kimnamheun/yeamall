@@ -78,6 +78,7 @@ model Profile {
   addressDetail String?    @map("address_detail")
   points        Int        @default(0)
   isAdmin       Boolean    @default(false) @map("is_admin")
+  isPartner     Boolean    @default(false) @map("is_partner")
   orders        Order[]
   cartItems     CartItem[]
   reviews       Review[]
@@ -109,6 +110,9 @@ model Order {
   paymentMethod  String?     @map("payment_method")
   paymentKey     String?     @map("payment_key")
   paidAt         DateTime?   @map("paid_at")
+  trackingNumber String?     @map("tracking_number")
+  carrierCode    String?     @map("carrier_code")
+  shippedAt      DateTime?   @map("shipped_at")
   items          OrderItem[]
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")

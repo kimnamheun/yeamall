@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAdminOrders } from "@/actions/admin";
 import { formatPrice } from "@/lib/utils";
-import { ORDER_STATUS } from "@/lib/constants";
+import { ORDER_STATUS, getCarrierByCode } from "@/lib/constants";
 import dayjs from "dayjs";
 import OrderStatusSelect from "./order-status-select";
 
@@ -50,6 +50,7 @@ export default async function AdminOrdersPage() {
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs hidden md:table-cell">상품</th>
                 <th className="text-right px-4 py-3 font-medium text-muted-foreground text-xs">금액</th>
                 <th className="text-center px-4 py-3 font-medium text-muted-foreground text-xs">상태</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs hidden lg:table-cell">송장번호</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs hidden sm:table-cell">일시</th>
                 <th className="text-center px-4 py-3 font-medium text-muted-foreground text-xs">변경</th>
               </tr>
@@ -88,6 +89,16 @@ export default async function AdminOrdersPage() {
                         {status.label}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
+                      {order.trackingNumber ? (
+                        <span>
+                          {getCarrierByCode(order.carrierCode ?? "")?.name}{" "}
+                          {order.trackingNumber}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">
                       {dayjs(order.createdAt).format("MM/DD HH:mm")}
                     </td>
@@ -99,7 +110,7 @@ export default async function AdminOrdersPage() {
               })}
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                     주문이 없습니다.
                   </td>
                 </tr>
